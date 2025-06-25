@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const dbUri = process.env.URL || "mongodb://localhost:27017/invoice"; // Fallback for local testing
-
+console.log('dbUri',dbUri);
 const databaseConnection = async () => {
   if (!dbUri) {
     console.error("MongoDB URI is undefined. Check your .env file!");

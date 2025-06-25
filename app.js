@@ -1,11 +1,11 @@
+import 'dotenv/config';
 import express from 'express';
 import db from './database/databaseConfig.js';
 import bodyParser from 'body-parser';
 import router from './router/router.js';
 import cors from 'cors';
 const app = express();
-const API_PORT = process.env.PORT || 8080; 
-
+const API_PORT = process.env.PORT || 8080;
 // database connection.
 db();
 

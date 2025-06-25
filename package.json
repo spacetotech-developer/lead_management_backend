@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app.js",
-    "server": "nodemon --exec babel-node app.js"
+    "start": "nodemon app.js",
+    "server": "nodemon node app.js"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +25,6 @@
     "@babel/core": "^7.24.5",
     "@babel/node": "^7.23.9",
     "@babel/preset-env": "^7.24.5",
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.10"
   }
 }

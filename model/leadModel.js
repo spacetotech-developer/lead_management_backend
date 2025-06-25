@@ -3,25 +3,25 @@ import mongoose from "mongoose";
 const leadSchema = new mongoose.Schema({
   UNIQUE_QUERY_ID: {
     type: String,
-    required: true,
+    required: false,
     unique: true
   },
   QUERY_TYPE: {
     type: String,
     enum: ['B', 'C'], // Assuming B is Business, C might be Consumer
-    required: true
+    required: false
   },
   QUERY_TIME: {
     type: Date,
-    required: true
+    required: false
   },
   SENDER_NAME: {
     type: String,
-    required: true
+    required: false
   },
   SENDER_MOBILE: {
     type: String,
-    required: true,
+    required: false,
     validate: {
       validator: function(v) {
         return /^\+91-\d{10}$/.test(v);
@@ -31,7 +31,7 @@ const leadSchema = new mongoose.Schema({
   },
   SENDER_EMAIL: {
     type: String,
-    required: true,
+    required: false,
     lowercase: true,
     validate: {
       validator: function(v) {
@@ -42,7 +42,7 @@ const leadSchema = new mongoose.Schema({
   },
   SUBJECT: {
     type: String,
-    required: true
+    required: false
   },
   SENDER_COMPANY: String,
   SENDER_ADDRESS: String,
@@ -76,11 +76,11 @@ const leadSchema = new mongoose.Schema({
   },
   QUERY_PRODUCT_NAME: {
     type: String,
-    required: true
+    required: false
   },
   QUERY_MESSAGE: {
     type: String,
-    required: true
+    required: false
   },
   QUERY_MCAT_NAME: String,
   CALL_DURATION: String,

@@ -1,6 +1,6 @@
 {
   "DB": {
-    "URI": "mongodb+srv://maheshkumar:FIheuINnkM7L3mgj@cluster0.efwxjl4.mongodb.net/invoice?retryWrites=true&w=majority",
+    "URI": "mongodb://maheshkumar:FIheuINnkM7L3mgj@cluster0.efwxjl4.mongodb.net/invoice?retryWrites=true&w=majority",
     "MONGOOSE": {
     },
     "AUTH": true

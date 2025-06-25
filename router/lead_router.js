@@ -1,5 +1,5 @@
 import express from 'express';
-import { addLeadIndiaMartController,getInvoiceController } from '../contoller/invoice.controller.js';
+import { addLeadIndiaMartController } from '../contoller/invoice.controller.js';
          
 const invoiceRouter = express.Router();
 
