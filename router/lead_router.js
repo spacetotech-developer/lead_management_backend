@@ -1,12 +1,12 @@
 import express from 'express';
-import { addLeadIndiaMartController } from '../contoller/invoice.controller.js';
+import { addLeadIndiaMartController,getLeadController } from '../contoller/invoice.controller.js';
          
-const invoiceRouter = express.Router();
+const leadRouter = express.Router();
 
 // Router to add todo data.
-invoiceRouter.post('/leadIndiaMart',addLeadIndiaMartController);
+leadRouter.post('/leadIndiaMart',addLeadIndiaMartController);
 
 // Router to update the todo data.
-// invoiceRouter.get('/getInvoice',getInvoiceController);
+leadRouter.get('/getLead',getLeadController);
 
-export default invoiceRouter;
+export default leadRouter;
