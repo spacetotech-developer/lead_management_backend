@@ -8,7 +8,7 @@ const leadSchema = new mongoose.Schema({
   },
   QUERY_TYPE: {
     type: String,
-    enum: ['B', 'C'], // Assuming B is Business, C might be Consumer
+    enum: ['W', 'B', 'P', 'V', 'BIZ','WA'], // Assuming B is Business, C might be Consumer
     required: false
   },
   QUERY_TIME: {
@@ -22,23 +22,23 @@ const leadSchema = new mongoose.Schema({
   SENDER_MOBILE: {
     type: String,
     required: false,
-    validate: {
-      validator: function(v) {
-        return /^\+91-\d{10}$/.test(v);
-      },
-      message: props => `${props.value} is not a valid Indian mobile number!`
-    }
+    // validate: {
+    //   validator: function(v) {
+    //     return /^\+91-\d{10}$/.test(v);
+    //   },
+    //   message: props => `${props.value} is not a valid Indian mobile number!`
+    // }
   },
   SENDER_EMAIL: {
     type: String,
     required: false,
     lowercase: true,
-    validate: {
-      validator: function(v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      },
-      message: props => `${props.value} is not a valid email!`
-    }
+    // validate: {
+    //   validator: function(v) {
+    //     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    //   },
+    //   message: props => `${props.value} is not a valid email!`
+    // }
   },
   SUBJECT: {
     type: String,
@@ -55,24 +55,24 @@ const leadSchema = new mongoose.Schema({
   },
   SENDER_MOBILE_ALT: {
     type: String,
-    validate: {
-      validator: function(v) {
-        return /^\+91-\d{10}$/.test(v);
-      },
-      message: props => `${props.value} is not a valid Indian mobile number!`
-    }
+    // validate: {
+    //   validator: function(v) {
+    //     return /^\+91-\d{10}$/.test(v);
+    //   },
+    //   message: props => `${props.value} is not a valid Indian mobile number!`
+    // }
   },
   SENDER_PHONE: String,
   SENDER_PHONE_ALT: String,
   SENDER_EMAIL_ALT: {
     type: String,
     lowercase: true,
-    validate: {
-      validator: function(v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      },
-      message: props => `${props.value} is not a valid email!`
-    }
+    // validate: {
+    //   validator: function(v) {
+    //     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    //   },
+    //   message: props => `${props.value} is not a valid email!`
+    // }
   },
   QUERY_PRODUCT_NAME: {
     type: String,
