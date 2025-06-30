@@ -1,4 +1,5 @@
 import Leads from "../model/leadModel.js";
+import FacebookLead from '../model/facebookModel.js';
 
 export const addLeadIndiaMartController = async(req,res,next)=>{
     try {
@@ -48,3 +49,47 @@ export const getLeadController = async (req, res, next) => {
     }
 }
 
+// Dashboard API for cards
+export const getLeadStats = async (req, res, next) => {
+  try {
+    // Get today's date at start and end of day
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // Execute queries sequentially
+    const totalIndiaMartLeads = await Leads.countDocuments();
+    const totalFacebookLeads = await FacebookLead.countDocuments();
+    
+    const newIndiaMartLeadsToday = await Leads.countDocuments({ 
+      createdAt: { $gte: todayStart, $lte: todayEnd } 
+    });
+    
+    const newFacebookLeadsToday = await FacebookLead.countDocuments({ 
+      createdAt: { $gte: todayStart, $lte: todayEnd } 
+    });
+
+    // Calculate totals
+    const totalLeads = totalIndiaMartLeads + totalFacebookLeads;
+    const totalNewLeadsToday = newIndiaMartLeadsToday + newFacebookLeadsToday;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalNewLeadsToday,
+        totalLeads,
+        totalIndiaMartLeads,
+        totalFacebookLeads
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching lead stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching lead statistics',
+      error: error.message
+    });
+  }
+};
