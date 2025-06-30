@@ -1,5 +1,5 @@
 import express from 'express';
-import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData } from '../contoller/invoice.controller.js';
+import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData,getChartData } from '../contoller/invoice.controller.js';
          
 const leadRouter = express.Router();
 
@@ -14,5 +14,8 @@ leadRouter.get('/getLeadStats',getLeadStats);
 
 // Router to get card lead state data.
 leadRouter.get('/getPieChartData/:period',getPieChartData);
+
+// Router to get card lead state data.
+leadRouter.get('/getChartData',getChartData);
 
 export default leadRouter;
