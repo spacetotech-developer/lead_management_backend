@@ -149,64 +149,11 @@ export const getPieChartData = async (req, res, next) => {
 };
 
 // Dashboard API for get PieChart data
-// export const getChartData = async (req, res, next) => {
-//   try {
-//     // Accepted periods with weekly as default
-//     const validPeriods = ['weekly', 'monthly', 'yearly'];
-//     let { period = 'weekly' } = req.body;
-    
-//     // Enforce valid periods only
-//     if (!validPeriods.includes(period)) {
-//       period = 'weekly'; // Default to weekly if invalid
-//     }
-
-//     // Date calculation (clean immutable approach)
-//     const now = new Date();
-//     let startDate = new Date(now); // Clone now date
-    
-//     switch (period) {
-//       case 'monthly':
-//         startDate.setMonth(now.getMonth() - 1);
-//         break;
-//       case 'yearly':
-//         startDate.setFullYear(now.getFullYear() - 1);
-//         break;
-//       default: // weekly (including fallback for invalid values)
-//         startDate.setDate(now.getDate() - 7);
-//     }
-
-//     // Single query construction
-//     const leadQuery = { createdAt: { $gte: startDate } };
-    
-//     // Parallel queries for better performance
-//     const [indiaMartLeads, facebookLeads] = await Promise.all([
-//       Leads.countDocuments(leadQuery),
-//       FacebookLead.countDocuments(leadQuery)
-//     ]);
-
-//     res.status(200).json({
-//       success: true,
-//       data: [
-//         { label: "India Mart", value: indiaMartLeads },
-//         { label: "Facebook", value: facebookLeads }
-//       ],
-//     });
-    
-//   } catch (error) {
-//     console.error('Error fetching pie chart data:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error fetching lead statistics',
-//       error: error.message
-//     });
-//   }
-// };
-
 export const getChartData = async (req, res, next) => {
   try {
     // Accepted periods with weekly as default
     const validPeriods = ['weekly', 'monthly', 'yearly'];
-    let { period = 'weekly' } = req.query; // Changed from req.body to req.query since frontend uses params
+    let { period = 'weekly' } = req.query;
     
     // Enforce valid periods only
     if (!validPeriods.includes(period)) {
@@ -217,122 +164,175 @@ export const getChartData = async (req, res, next) => {
     const now = new Date();
     let startDate = new Date(now); // Clone now date
     
-    // Determine time intervals based on period
-    let intervals = 7; // Default for weekly
-    let timeUnit = 'day';
-    
     switch (period) {
       case 'monthly':
-        intervals = 30;
         startDate.setMonth(now.getMonth() - 1);
         break;
       case 'yearly':
-        intervals = 12;
-        timeUnit = 'month';
         startDate.setFullYear(now.getFullYear() - 1);
         break;
       default: // weekly (including fallback for invalid values)
-        intervals = 7;
         startDate.setDate(now.getDate() - 7);
     }
 
-    // Generate date labels
-    const labels = [];
-    const datePoints = [];
+    // Single query construction
+    const leadQuery = { createdAt: { $gte: startDate } };
     
-    for (let i = 0; i <= intervals; i++) {
-      const date = new Date(startDate);
-      
-      if (timeUnit === 'day') {
-        date.setDate(startDate.getDate() + i);
-      } else if (timeUnit === 'month') {
-        date.setMonth(startDate.getMonth() + i);
-      }
-      
-      datePoints.push(new Date(date));
-      
-      if (timeUnit === 'day') {
-        labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-      } else {
-        labels.push(date.toLocaleDateString('en-US', { month: 'short' }));
-      }
-    }
-
-    // Function to aggregate data by time intervals
-    const aggregateData = async (Model) => {
-      const results = await Model.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: startDate, $lte: now }
-          }
-        },
-        {
-          $group: {
-            _id: {
-              [timeUnit === 'day' ? '$dayOfYear' : '$month']: '$createdAt',
-              ...(timeUnit === 'day' ? {} : { year: { '$year': '$createdAt' } })
-            },
-            count: { $sum: 1 },
-            date: { $first: '$createdAt' }
-          }
-        },
-        {
-          $sort: { date: 1 }
-        }
-      ]);
-
-      // Map results to our date points
-      const dataPoints = Array(intervals + 1).fill(0);
-      
-      results.forEach(result => {
-        const resultDate = new Date(result.date);
-        let index;
-        
-        if (timeUnit === 'day') {
-          const diffDays = Math.floor((resultDate - startDate) / (1000 * 60 * 60 * 24));
-          index = Math.min(diffDays, intervals);
-        } else {
-          const diffMonths = (resultDate.getFullYear() - startDate.getFullYear()) * 12 + 
-                            (resultDate.getMonth() - startDate.getMonth());
-          index = Math.min(diffMonths, intervals);
-        }
-        
-        dataPoints[index] = result.count;
-      });
-
-      // Calculate cumulative sums for area chart
-      for (let i = 1; i < dataPoints.length; i++) {
-        dataPoints[i] += dataPoints[i - 1];
-      }
-
-      return dataPoints;
-    };
-
-    // Get data for both sources
-    const [indiaMartData, facebookData] = await Promise.all([
-      aggregateData(Leads),
-      aggregateData(FacebookLead)
+    // Parallel queries for better performance
+    const [indiaMartLeads, facebookLeads] = await Promise.all([
+      Leads.countDocuments(leadQuery),
+      FacebookLead.countDocuments(leadQuery)
     ]);
-
-    // Prepare response data
-    const responseData = labels.map((label, index) => ({
-      label,
-      totalRequests: indiaMartData[index] || 0,
-      completedRequests: facebookData[index] || 0,
-      // pendingRequests: 0 // Uncomment if you want to include pending requests
-    }));
 
     res.status(200).json({
       success: true,
-      data: responseData
+      data: [
+        { totalRequests: indiaMartLeads },
+        { completedRequests: facebookLeads }
+      ],
     });
     
   } catch (error) {
-    console.error('Error fetching chart data:', error);
+    console.error('Error fetching pie chart data:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching chart data',
+      message: 'Error fetching lead statistics',
       error: error.message
     });
   }
 };
+
+// export const getChartData = async (req, res, next) => {
+//   try {
+//     // Accepted periods with weekly as default
+//     const validPeriods = ['weekly', 'monthly', 'yearly'];
+//     let { period = 'weekly' } = req.query; // Changed from req.body to req.query since frontend uses params
+    
+//     // Enforce valid periods only
+//     if (!validPeriods.includes(period)) {
+//       period = 'weekly'; // Default to weekly if invalid
+//     }
+
+//     // Date calculation (clean immutable approach)
+//     const now = new Date();
+//     let startDate = new Date(now); // Clone now date
+    
+//     // Determine time intervals based on period
+//     let intervals = 7; // Default for weekly
+//     let timeUnit = 'day';
+    
+//     switch (period) {
+//       case 'monthly':
+//         intervals = 30;
+//         startDate.setMonth(now.getMonth() - 1);
+//         break;
+//       case 'yearly':
+//         intervals = 12;
+//         timeUnit = 'month';
+//         startDate.setFullYear(now.getFullYear() - 1);
+//         break;
+//       default: // weekly (including fallback for invalid values)
+//         intervals = 7;
+//         startDate.setDate(now.getDate() - 7);
+//     }
+
+//     // Generate date labels
+//     const labels = [];
+//     const datePoints = [];
+    
+//     for (let i = 0; i <= intervals; i++) {
+//       const date = new Date(startDate);
+      
+//       if (timeUnit === 'day') {
+//         date.setDate(startDate.getDate() + i);
+//       } else if (timeUnit === 'month') {
+//         date.setMonth(startDate.getMonth() + i);
+//       }
+      
+//       datePoints.push(new Date(date));
+      
+//       if (timeUnit === 'day') {
+//         labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+//       } else {
+//         labels.push(date.toLocaleDateString('en-US', { month: 'short' }));
+//       }
+//     }
+
+//     // Function to aggregate data by time intervals
+//     const aggregateData = async (Model) => {
+//       const results = await Model.aggregate([
+//         {
+//           $match: {
+//             createdAt: { $gte: startDate, $lte: now }
+//           }
+//         },
+//         {
+//           $group: {
+//             _id: {
+//               [timeUnit === 'day' ? '$dayOfYear' : '$month']: '$createdAt',
+//               ...(timeUnit === 'day' ? {} : { year: { '$year': '$createdAt' } })
+//             },
+//             count: { $sum: 1 },
+//             date: { $first: '$createdAt' }
+//           }
+//         },
+//         {
+//           $sort: { date: 1 }
+//         }
+//       ]);
+
+//       // Map results to our date points
+//       const dataPoints = Array(intervals + 1).fill(0);
+      
+//       results.forEach(result => {
+//         const resultDate = new Date(result.date);
+//         let index;
+        
+//         if (timeUnit === 'day') {
+//           const diffDays = Math.floor((resultDate - startDate) / (1000 * 60 * 60 * 24));
+//           index = Math.min(diffDays, intervals);
+//         } else {
+//           const diffMonths = (resultDate.getFullYear() - startDate.getFullYear()) * 12 + 
+//                             (resultDate.getMonth() - startDate.getMonth());
+//           index = Math.min(diffMonths, intervals);
+//         }
+        
+//         dataPoints[index] = result.count;
+//       });
+
+//       // Calculate cumulative sums for area chart
+//       for (let i = 1; i < dataPoints.length; i++) {
+//         dataPoints[i] += dataPoints[i - 1];
+//       }
+
+//       return dataPoints;
+//     };
+
+//     // Get data for both sources
+//     const [indiaMartData, facebookData] = await Promise.all([
+//       aggregateData(Leads),
+//       aggregateData(FacebookLead)
+//     ]);
+
+//     // Prepare response data
+//     const responseData = labels.map((label, index) => ({
+//       label,
+//       totalRequests: indiaMartData[index] || 0,
+//       completedRequests: facebookData[index] || 0,
+//       // pendingRequests: 0 // Uncomment if you want to include pending requests
+//     }));
+
+//     res.status(200).json({
+//       success: true,
+//       data: responseData
+//     });
+    
+//   } catch (error) {
+//     console.error('Error fetching chart data:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error fetching chart data',
+//       error: error.message
+//     });
+//   }
+// };
