@@ -1,15 +1,18 @@
 import express from 'express';
-import { addLeadIndiaMartController,getLeadController,getLeadStats } from '../contoller/invoice.controller.js';
+import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData } from '../contoller/invoice.controller.js';
          
 const leadRouter = express.Router();
 
-// Router to add todo data.
+// Router to add india mart leads data.
 leadRouter.post('/leadIndiaMart',addLeadIndiaMartController);
 
-// Router to update the todo data.
+// Router to get the india mart lead data.
 leadRouter.get('/getLead',getLeadController);
 
-// Router to update the todo data.
+// Router to get card lead state data.
 leadRouter.get('/getLeadStats',getLeadStats);
+
+// Router to get card lead state data.
+leadRouter.get('/getLeadStats/:period',getPieChartData);
 
 export default leadRouter;

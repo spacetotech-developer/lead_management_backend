@@ -93,3 +93,58 @@ export const getLeadStats = async (req, res, next) => {
     });
   }
 };
+
+// Dashboard API for get PieChart data
+export const getPieChartData = async (req, res, next) => {
+  try {
+    // Accepted periods with weekly as default
+    const validPeriods = ['weekly', 'monthly', 'yearly'];
+    let { period = 'weekly' } = req.params;
+    
+    // Enforce valid periods only
+    if (!validPeriods.includes(period)) {
+      period = 'weekly'; // Default to weekly if invalid
+    }
+
+    // Date calculation (clean immutable approach)
+    const now = new Date();
+    let startDate = new Date(now); // Clone now date
+    
+    switch (period) {
+      case 'monthly':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case 'yearly':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default: // weekly (including fallback for invalid values)
+        startDate.setDate(now.getDate() - 7);
+    }
+
+    // Single query construction
+    const leadQuery = { createdAt: { $gte: startDate } };
+    
+    // Parallel queries for better performance
+    const [indiaMartLeads, facebookLeads] = await Promise.all([
+      Leads.countDocuments(leadQuery),
+      FacebookLead.countDocuments(leadQuery)
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: [
+        { label: "India Mart", value: indiaMartLeads },
+        { label: "Facebook", value: facebookLeads }
+      ],
+      period // Return the actual period used
+    });
+    
+  } catch (error) {
+    console.error('Error fetching pie chart data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching lead statistics',
+      error: error.message
+    });
+  }
+};
