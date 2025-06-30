@@ -13,6 +13,6 @@ leadRouter.get('/getLead',getLeadController);
 leadRouter.get('/getLeadStats',getLeadStats);
 
 // Router to get card lead state data.
-leadRouter.get('/getLeadStats/:period',getPieChartData);
+leadRouter.get('/getPieChartData/:period',getPieChartData);
 
 export default leadRouter;
