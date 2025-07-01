@@ -1,10 +1,11 @@
 import express from 'express';
 import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData,getChartData } from '../contoller/invoice.controller.js';
+import { verifyPermissionToken } from '../middleware/checkPemissionAuth.js';
          
 const leadRouter = express.Router();
 
 // Router to add india mart leads data.
-leadRouter.post('/leadIndiaMart',addLeadIndiaMartController);
+leadRouter.post('/leadIndiaMart',verifyPermissionToken(),addLeadIndiaMartController);
 
 // Router to get the india mart lead data.
 leadRouter.get('/getLead',getLeadController);

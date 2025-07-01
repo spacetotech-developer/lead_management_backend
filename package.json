@@ -13,13 +13,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "body-parser": "^1.20.2",
     "config": "^3.3.11",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.19.2",
     "joi": "^17.13.1",
-    "mongoose": "^8.3.4"
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.4",
+    "mongoose-delete": "^1.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.5",

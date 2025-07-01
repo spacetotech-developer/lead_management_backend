@@ -23,6 +23,7 @@ app.use(cors());
 const apiRouter = express.Router();
 app.use('/api/v1', apiRouter);
 apiRouter.use('/lead',router.lead_router);
+apiRouter.use('/admin',router.admin_router);
 
 app.listen(API_PORT,()=>{
     console.log(`Server is running at port number ${API_PORT}`);
