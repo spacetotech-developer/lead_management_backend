@@ -19,6 +19,11 @@ app.use(cors());
 //     credentials: true // if you're using cookies or sessions
 // }));
 
+// Add a simple root route
+app.get('/', (req, res) => {
+    res.send('Server is running');
+});
+
 // router middleware.
 const apiRouter = express.Router();
 app.use('/api/v1', apiRouter);

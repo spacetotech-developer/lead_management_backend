@@ -5,7 +5,7 @@ import { verifyPermissionToken } from '../middleware/checkPemissionAuth.js';
 const leadRouter = express.Router();
 
 // Router to add india mart leads data.
-leadRouter.post('/leadIndiaMart',verifyPermissionToken(),addLeadIndiaMartController);
+leadRouter.post('/leadIndiaMart',addLeadIndiaMartController);
 
 // Router to get the india mart lead data.
 leadRouter.get('/getLead',getLeadController);
