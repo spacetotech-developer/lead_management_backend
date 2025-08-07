@@ -266,14 +266,29 @@ export const getChartData = async (req, res, next) => {
             createdAt: { $gte: startDate, $lte: now }
           }
         },
+        // {
+        //   $group: {
+        //     _id: {
+        //       [timeUnit === 'day' ? '$dayOfYear' : '$month']: '$createdAt',
+        //       ...(timeUnit === 'day' ? {} : { year: { '$year': '$createdAt' } })
+        //     },
+        //     count: { $sum: 1 },
+        //     date: { $first: '$createdAt' }
+        //   }
+        // },
         {
           $group: {
-            _id: {
-              [timeUnit === 'day' ? '$dayOfYear' : '$month']: '$createdAt',
-              ...(timeUnit === 'day' ? {} : { year: { '$year': '$createdAt' } })
-            },
+            _id: timeUnit === 'day'
+              ? {
+                  dayOfYear: { $dayOfYear: "$createdAt" },
+                  year: { $year: "$createdAt" }
+                }
+              : {
+                  month: { $month: "$createdAt" },
+                  year: { $year: "$createdAt" }
+                },
             count: { $sum: 1 },
-            date: { $first: '$createdAt' }
+            date: { $first: "$createdAt" }
           }
         },
         {
@@ -317,9 +332,9 @@ export const getChartData = async (req, res, next) => {
     // Prepare response data
     const responseData = labels.map((label, index) => ({
       label,
-      totalRequests: indiaMartData[index] || 0,
-      completedRequests: facebookData[index] || 0,
-      // pendingRequests: 0 // Uncomment if you want to include pending requests
+      indiaTotalleads: indiaMartData[index] || 0,
+      facebookTotalleads: facebookData[index] || 0,
+      justDialtTotalleads: 0 // Uncomment if you want to include pending requests
     }));
 
     res.status(200).json({
