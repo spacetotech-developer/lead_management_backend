@@ -48,6 +48,43 @@ export const getLeadController = async (req, res, next) => {
         });
     }
 }
+// Fetch the facebook leads
+export const getFbLeadController = async (req, res, next) => {
+    try {
+        // Optional: Add pagination parameters
+        const { page = 1, limit = 10 } = req.query;
+        
+        // Optional: Add filtering
+        const filter = {};
+        if (req.query.status) filter.status = req.query.status;
+        if (req.query.source) filter.source = req.query.source;
+        
+        const leads = await FacebookLead.find(filter)
+            .limit(parseInt(limit))
+            .skip((page - 1) * limit)
+            .sort({ createdAt: -1 }); // Sort by newest first
+        
+        // Optional: Get total count for pagination info
+        const total = await FacebookLead.countDocuments(filter);
+        
+        res.status(200).json({
+            success: true,
+            data: leads,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching leads:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error retrieving leads"
+        });
+    }
+}
 
 // Dashboard API for cards
 export const getLeadStats = async (req, res, next) => {
