@@ -351,3 +351,59 @@ export const getChartData = async (req, res, next) => {
     });
   }
 };
+
+export const addFacebookLead = async (req, res) => {
+  try {
+    const body = req.body;
+    console.log("body>>>>>>",body)  
+    // ✅ Respond immediately to Facebook to avoid timeouts
+    res.sendStatus(200);
+
+    if (body.object === 'page') {
+      for (const entry of body.entry) {
+        for (const change of entry.changes) {
+          if (change.field === 'leadgen') {
+            const leadId = change.value.leadgen_id;
+            console.log('leadId>>>>>>>>>>',leadId);
+            try {
+              const response = await axios.get(
+                `https://graph.facebook.com/v23.0/${leadId}?access_token=${process.env.PAGE_ACCESS_TOKEN}`
+              );
+              
+              const leadData = response.data;
+
+              await FacebookLead.create({
+                leadId: leadData.id,
+                formId: leadData.form_id,
+                createdTime: leadData.created_time,
+                fieldData: leadData.field_data
+              });
+
+              console.log('✅ Lead saved:', leadData.id);
+            } catch (err) {
+              console.error('❌ Facebook API error:', err.response?.data || err.message);
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('❌ Unexpected error:', err.message);
+    res.sendStatus(500);
+  }
+};
+
+// Facebook Webhook Verification
+export const verifyWebhook = (req, res) => {
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token && mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('📩 Webhook verified');
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
+};

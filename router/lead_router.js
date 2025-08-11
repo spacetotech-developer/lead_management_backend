@@ -1,5 +1,5 @@
 import express from 'express';
-import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData,getChartData } from '../contoller/invoice.controller.js';
+import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData,getChartData,addFacebookLead,verifyWebhook } from '../contoller/invoice.controller.js';
 import { verifyPermissionToken } from '../middleware/checkPemissionAuth.js';
          
 const leadRouter = express.Router();
@@ -18,5 +18,11 @@ leadRouter.get('/getPieChartData/:period',getPieChartData);
 
 // Router to get card lead state data.
 leadRouter.get('/getChartData',getChartData);
+
+//Facebook Webhook Verification
+leadRouter.get('/webhook/facebook',verifyWebhook);
+
+// Router to add facebook leads
+leadRouter.post('/webhook/facebook',addFacebookLead);
 
 export default leadRouter;
