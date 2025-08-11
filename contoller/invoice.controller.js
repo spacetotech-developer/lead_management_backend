@@ -1,5 +1,6 @@
 import Leads from "../model/leadModel.js";
 import FacebookLead from '../model/facebookModel.js';
+import axios from "axios";
 
 export const addLeadIndiaMartController = async(req,res,next)=>{
     try {
@@ -389,6 +390,22 @@ export const getChartData = async (req, res, next) => {
   }
 };
 
+// Facebook Webhook Verification
+export const verifyWebhook = (req, res) => {
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token && mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('📩 Webhook verified');
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
+};
+
+// Add facebook leads 
 export const addFacebookLead = async (req, res) => {
   try {
     const body = req.body;
@@ -427,20 +444,5 @@ export const addFacebookLead = async (req, res) => {
   } catch (err) {
     console.error('❌ Unexpected error:', err.message);
     res.sendStatus(500);
-  }
-};
-
-// Facebook Webhook Verification
-export const verifyWebhook = (req, res) => {
-  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-
-  if (mode && token && mode === 'subscribe' && token === VERIFY_TOKEN) {
-    console.log('📩 Webhook verified');
-    res.status(200).send(challenge);
-  } else {
-    res.sendStatus(403);
   }
 };
