@@ -4,7 +4,6 @@ const leadSchema = new mongoose.Schema({
   UNIQUE_QUERY_ID: {
     type: String,
     required: false,
-    unique: true
   },
   QUERY_TYPE: {
     type: String,

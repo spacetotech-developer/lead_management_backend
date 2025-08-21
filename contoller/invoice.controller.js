@@ -1,5 +1,6 @@
 import Leads from "../model/leadModel.js";
 import FacebookLead from '../model/facebookModel.js';
+import JustDialLead from '../model/justDialModel.js';
 import axios from "axios";
 
 export const addLeadIndiaMartController = async(req,res,next)=>{
@@ -444,5 +445,30 @@ export const addFacebookLead = async (req, res) => {
   } catch (err) {
     console.error('❌ Unexpected error:', err.message);
     res.sendStatus(500);
+  }
+};
+
+// Add Just Dial leads
+ export const addJustDialLead = async (req, res) => {
+  try {
+    let data = {};
+
+    // If JSON POST
+    if (req.is("application/json")) {
+      data = req.body;
+    }
+    // If Form POST or GET query params
+    else {
+      data = req.method === "POST" ? req.body : req.query;
+    }
+
+    // Save to DB
+    const lead = new JustDialLead(data);
+    await lead.save();
+
+    return res.status(200).json({ success: true, message: "Lead stored successfully" });
+  } catch (error) {
+    // console.error("Webhook Error:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
