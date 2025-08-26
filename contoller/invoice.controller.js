@@ -2,6 +2,7 @@ import Leads from "../model/leadModel.js";
 import FacebookLead from '../model/facebookModel.js';
 import JustDialLead from '../model/justDialModel.js';
 import HotLead from '../model/hotLeadModel.js';
+import EFLLead from '../model/leadEFLModel.js';
 // const xml2js = require('xml2js');
 import xml2js from 'xml2js'
 
@@ -516,3 +517,29 @@ export const addHotLead = async (req, res) =>{
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// Add EFL Leads
+export const addEFLLead = async (req, res) =>{
+  try {
+    const data = req.body;
+
+    // Basic validation
+    if (!data.name || !data.phone) {
+      return res.status(400).json({ error: 'Missing required fields: name or phone' });
+    }
+
+    // Optional: validate utm_params
+    if (data.utm_params && typeof data.utm_params !== 'object') {
+      return res.status(400).json({ error: 'Invalid utm_params format' });
+    }
+
+    // Save lead to MongoDB
+    const lead = new EFLLead(data);
+    await lead.save();
+
+    return res.status(200).json({ message: 'Lead saved successfully', lead });
+  } catch (err) {
+    console.error('Error saving lead:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
