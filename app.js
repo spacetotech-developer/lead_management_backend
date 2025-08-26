@@ -13,6 +13,7 @@ db();
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.text({ type: ['text/*', 'application/xml', '*/xml'] }))
 app.use(cors());
 // app.use(cors({
 //     origin: 'http://localhost:5173https://poc-project-frontend.vercel.app/', // frontend origin

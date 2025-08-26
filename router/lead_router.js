@@ -1,5 +1,5 @@
 import express from 'express';
-import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData,getChartData,addFacebookLead,verifyWebhook,getFbLeadController,addJustDialLead } from '../contoller/invoice.controller.js';
+import { addLeadIndiaMartController,getLeadController,getLeadStats,getPieChartData,getChartData,addFacebookLead,verifyWebhook,getFbLeadController,addJustDialLead,addHotLead } from '../contoller/invoice.controller.js';
 import { verifyPermissionToken } from '../middleware/checkPemissionAuth.js';
          
 const leadRouter = express.Router();
@@ -29,4 +29,8 @@ leadRouter.post('/webhook/facebook',addFacebookLead);
 
 // Router to add Just Dial leads
 leadRouter.post('/webhook/justdial',addJustDialLead);
+
+// Router to add hot leads from EFL website
+// leadRouter.post('webhook/hotlead',addHotLead);
+leadRouter.post('/webhook/hotlead',addHotLead);
 export default leadRouter;

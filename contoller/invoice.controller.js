@@ -1,6 +1,10 @@
 import Leads from "../model/leadModel.js";
 import FacebookLead from '../model/facebookModel.js';
 import JustDialLead from '../model/justDialModel.js';
+import HotLead from '../model/hotLeadModel.js';
+// const xml2js = require('xml2js');
+import xml2js from 'xml2js'
+
 import axios from "axios";
 
 export const addLeadIndiaMartController = async(req,res,next)=>{
@@ -470,5 +474,45 @@ export const addFacebookLead = async (req, res) => {
   } catch (error) {
     // console.error("Webhook Error:", error);
     return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+// Add Hot Leads
+export const addHotLead = async (req, res) =>{
+  console.log("Hot lead webhook hit");
+  try {
+    let leadData = {};
+
+    if (req.is('application/json')) {
+      // If request is JSON
+      leadData = req.body;
+    } else if (req.is('text/xml') || req.is('application/xml') || req.is('text/plain')) {
+      // If request is XML or plain text
+      const parser = new xml2js.Parser({ explicitArray: false });
+      const result = await parser.parseStringPromise(req.body);
+
+      // Navigate to SOAP body or fallback
+      leadData = result?.['soap:Envelope']?.['soap:Body']?.['efl'] || result?.efl;
+
+      if (!leadData) {
+        return res.status(400).json({ error: 'Invalid XML format' });
+      }
+    } else {
+      return res.status(415).json({ error: 'Unsupported Content-Type' });
+    }
+
+    // Basic validation
+    if (!leadData.name || !leadData.mobile) {
+      return res.status(400).json({ error: 'Missing required fields: name or mobile' });
+    }
+
+    // Save to MongoDB
+    const lead = new HotLead(leadData);
+    await lead.save();
+
+    return res.status(200).json({ message: 'Lead saved successfully', lead });
+  } catch (err) {
+    console.error('Error processing webhook:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
