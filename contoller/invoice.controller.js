@@ -511,7 +511,7 @@ export const addFacebookLead = async (req, res) => {
                 campaignName: formData.campaign_name,
                 platform: formData.platform,
               };
-
+              console.log("combinedData>>>",combinedData);
               // 5️⃣ Save to DB
               await FacebookLead.create(combinedData);
 
