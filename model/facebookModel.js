@@ -44,7 +44,12 @@ const facebookSchema = new mongoose.Schema({
       name: String,
       values: [String]
     }
-  ]
+  ],
+  ad_name: String,
+  adset_name: String, 
+  campaign_name: String,
+  form_name: String,
+  platform: String 
 },{
   timestamps: { currentTime: () => Date.now() },
   toJSON: { virtuals: true },

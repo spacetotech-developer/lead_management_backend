@@ -106,6 +106,7 @@ export const getLeadStats = async (req, res, next) => {
     // Execute queries sequentially
     const totalIndiaMartLeads = await Leads.countDocuments();
     const totalFacebookLeads = await FacebookLead.countDocuments();
+    const totaljustDialLeads = await JustDialLead.countDocuments();
     
     const newIndiaMartLeadsToday = await Leads.countDocuments({ 
       createdAt: { $gte: todayStart, $lte: todayEnd } 
@@ -125,7 +126,8 @@ export const getLeadStats = async (req, res, next) => {
         totalNewLeadsToday,
         totalLeads,
         totalIndiaMartLeads,
-        totalFacebookLeads
+        totalFacebookLeads,
+        totaljustDialLeads
       }
     });
   } catch (error) {
@@ -169,16 +171,18 @@ export const getPieChartData = async (req, res, next) => {
     const leadQuery = { createdAt: { $gte: startDate } };
     
     // Parallel queries for better performance
-    const [indiaMartLeads, facebookLeads] = await Promise.all([
+    const [indiaMartLeads, facebookLeads, justdialLeads] = await Promise.all([
       Leads.countDocuments(leadQuery),
-      FacebookLead.countDocuments(leadQuery)
+      FacebookLead.countDocuments(leadQuery),
+      JustDialLead.countDocuments(leadQuery)
     ]);
 
     res.status(200).json({
       success: true,
       data: [
         { label: "India Mart", value: indiaMartLeads },
-        { label: "Facebook", value: facebookLeads }
+        { label: "Facebook", value: facebookLeads },
+        { label: "JustDial", value: justdialLeads}
       ],
     });
     
@@ -368,9 +372,10 @@ export const getChartData = async (req, res, next) => {
     };
 
     // Get data for both sources
-    const [indiaMartData, facebookData] = await Promise.all([
+    const [indiaMartData, facebookData,justdialdata] = await Promise.all([
       aggregateData(Leads),
-      aggregateData(FacebookLead)
+      aggregateData(FacebookLead),
+      aggregateData(JustDialLead)
     ]);
 
     // Prepare response data
@@ -378,7 +383,7 @@ export const getChartData = async (req, res, next) => {
       label,
       indiaTotalleads: indiaMartData[index] || 0,
       facebookTotalleads: facebookData[index] || 0,
-      justDialtTotalleads: 0 // Uncomment if you want to include pending requests
+      justDialtTotalleads: justdialdata[index] || 0,// Uncomment if you want to include pending requests
     }));
 
     res.status(200).json({
@@ -412,46 +417,121 @@ export const verifyWebhook = (req, res) => {
 };
 
 // Add facebook leads 
+// export const addFacebookLead = async (req, res) => {
+//   try {
+//     const body = req.body;
+//     console.log("body>>>>>>",body)  
+//     // ✅ Respond immediately to Facebook to avoid timeouts
+//     res.sendStatus(200);
+
+//     if (body.object === 'page') {
+//       for (const entry of body.entry) {
+//         for (const change of entry.changes) {
+//           if (change.field === 'leadgen') {
+//             const leadId = change.value.leadgen_id;
+//             console.log('leadId>>>>>>>>>>',leadId);
+//             try {
+//               const response = await axios.get(
+//                 `https://graph.facebook.com/v23.0/${leadId}?access_token=${process.env.PAGE_ACCESS_TOKEN}`
+//               );
+              
+//               const leadData = response.data;
+
+//               await FacebookLead.create({
+//                 leadId: leadData.id,
+//                 formId: leadData.form_id,
+//                 createdTime: leadData.created_time,
+//                 fieldData: leadData.field_data
+//               });
+
+//               console.log('✅ Lead saved:', leadData.id);
+//             } catch (err) {
+//               console.error('❌ Facebook API error:', err.response?.data || err.message);
+//             }
+//           }
+//         }
+//       }
+//     }
+//   } catch (err) {
+//     console.error('❌ Unexpected error:', err.message);
+//     res.sendStatus(500);
+//   }
+// };
+
 export const addFacebookLead = async (req, res) => {
   try {
     const body = req.body;
-    console.log("body>>>>>>",body)  
-    // ✅ Respond immediately to Facebook to avoid timeouts
+    console.log("body>>>>>>", body);
+
+    // ✅ Respond immediately to Facebook to avoid webhook timeout
     res.sendStatus(200);
 
-    if (body.object === 'page') {
+    if (body.object === "page") {
       for (const entry of body.entry) {
         for (const change of entry.changes) {
-          if (change.field === 'leadgen') {
+          if (change.field === "leadgen") {
             const leadId = change.value.leadgen_id;
-            console.log('leadId>>>>>>>>>>',leadId);
+            console.log("leadId>>>>>>>>>>", leadId);
+
             try {
-              const response = await axios.get(
+              // 1️⃣ Get lead detailed info (v23)
+              const leadResponse = await axios.get(
                 `https://graph.facebook.com/v23.0/${leadId}?access_token=${process.env.PAGE_ACCESS_TOKEN}`
               );
-              
-              const leadData = response.data;
+              const leadData = leadResponse.data;
 
-              await FacebookLead.create({
+              // 2️⃣ Get ad/campaign info (v21)
+              const formResponse = await axios.get(
+                `https://graph.facebook.com/v21.0/${leadId}?fields=ad_name,adset_name,campaign_name,form_id,platform,created_time&access_token=${process.env.PAGE_ACCESS_TOKEN}`
+              );
+              const formData = formResponse.data;
+
+              // 3️⃣ Get form details to fetch form_name
+              let formName = "";
+              if (formData.form_id) {
+                try {
+                  const formDetails = await axios.get(
+                    `https://graph.facebook.com/v23.0/${leadData.form_id}?fields=name&access_token=${process.env.PAGE_ACCESS_TOKEN}`
+                  );
+                  formName = formDetails.data.name;
+                } catch (err) {
+                  console.error("❌ Error fetching form_name:", err.response?.data || err.message);
+                }
+              }
+
+              // 4️⃣ Combine data
+              const combinedData = {
                 leadId: leadData.id,
                 formId: leadData.form_id,
+                formName, // <-- store form_name here
                 createdTime: leadData.created_time,
-                fieldData: leadData.field_data
-              });
+                fieldData: leadData.field_data,
+                adName: formData.ad_name,
+                adsetName: formData.adset_name,
+                campaignName: formData.campaign_name,
+                platform: formData.platform,
+              };
 
-              console.log('✅ Lead saved:', leadData.id);
+              // 5️⃣ Save to DB
+              await FacebookLead.create(combinedData);
+
+              console.log("✅ Lead saved:", leadData.id);
             } catch (err) {
-              console.error('❌ Facebook API error:', err.response?.data || err.message);
+              console.error(
+                "❌ Facebook API error:",
+                err.response?.data || err.message
+              );
             }
           }
         }
       }
     }
   } catch (err) {
-    console.error('❌ Unexpected error:', err.message);
+    console.error("❌ Unexpected error:", err.message);
     res.sendStatus(500);
   }
 };
+
 
 // Add Just Dial leads
  export const addJustDialLead = async (req, res) => {
@@ -477,6 +557,45 @@ export const addFacebookLead = async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
+// Get Just Dial leads
+export const getJustLeadController = async (req, res ) => {
+   console.log("leads")
+    try {
+        // Optional: Add pagination parameters
+        const { page = 1, limit = 10 } = req.query;
+        
+        // Optional: Add filtering
+        const filter = {};
+        if (req.query.status) filter.status = req.query.status;
+        if (req.query.source) filter.source = req.query.source;
+        
+        const leads = await JustDialLead.find(filter)
+            .limit(parseInt(limit))
+            .skip((page - 1) * limit)
+            .sort({ createdAt: -1 }); // Sort by newest first
+        
+        // Optional: Get total count for pagination info
+        const total = await JustDialLead.countDocuments(filter);
+        
+        res.status(200).json({
+            success: true,
+            data: leads,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching leads:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error retrieving leads"
+        });
+    }
+}
 
 // Add Hot Leads
 export const addHotLead = async (req, res) =>{

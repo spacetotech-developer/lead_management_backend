@@ -10,9 +10,11 @@ import {
   getFbLeadController,
   addJustDialLead,
   addHotLead,
+  getJustLeadController,
   addEFLLead,
 } from "../contoller/invoice.controller.js";
 import { verifyPermissionToken } from "../middleware/checkPemissionAuth.js";
+import { verifyJWT } from "../middleware/checkAdminAuth.js";
 
 const leadRouter = express.Router();
 
@@ -41,6 +43,9 @@ leadRouter.post("/webhook/facebook", addFacebookLead);
 
 // Router to add Just Dial leads
 leadRouter.post("/webhook/justdial", addJustDialLead);
+
+// Router to get Just Dial leads
+leadRouter.get("/getJustDialLead", verifyJWT(), getJustLeadController);
 
 // Router to add hot leads from EFL website
 leadRouter.post("/webhook/hotlead", addHotLead);
