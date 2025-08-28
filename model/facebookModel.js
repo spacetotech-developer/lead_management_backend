@@ -45,9 +45,9 @@ const facebookSchema = new mongoose.Schema({
       values: [String]
     }
   ],
-  ad_name: String,
-  adset_name: String, 
-  campaign_name: String,
+  adName: String,
+  adsetName: String, 
+  campaignName: String,
   form_name: String,
   platform: String 
 },{
