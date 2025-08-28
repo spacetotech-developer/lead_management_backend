@@ -461,8 +461,6 @@ export const verifyWebhook = (req, res) => {
 export const addFacebookLead = async (req, res) => {
   try {
     const body = req.body;
-    console.log("body>>>>>>", body);
-
     // ✅ Respond immediately to Facebook to avoid webhook timeout
     res.sendStatus(200);
 
@@ -471,8 +469,6 @@ export const addFacebookLead = async (req, res) => {
         for (const change of entry.changes) {
           if (change.field === "leadgen") {
             const leadId = change.value.leadgen_id;
-            console.log("leadId>>>>>>>>>>", leadId);
-
             try {
               // 1️⃣ Get lead detailed info (v23)
               const leadResponse = await axios.get(
@@ -485,7 +481,6 @@ export const addFacebookLead = async (req, res) => {
                 `https://graph.facebook.com/v21.0/${leadId}?fields=ad_name,adset_name,campaign_name,form_id,platform,created_time&access_token=${process.env.PAGE_ACCESS_TOKEN}`
               );
               const formData = formResponse.data;
-              console.log('formData',formData)
               // 3️⃣ Get form details to fetch form_name
               let formName = "";
               if (formData.form_id) {
@@ -493,8 +488,8 @@ export const addFacebookLead = async (req, res) => {
                   const formDetails = await axios.get(
                     `https://graph.facebook.com/v23.0/${formData.form_id}?access_token=${process.env.PAGE_ACCESS_TOKEN}`
                   );
-                  console.log('formDetails',formDetails);
-                  formName = formDetails.data.name;
+                  formName = formDetails?.data?.name;
+                  formId = formDetails?.data?.id
                 } catch (err) {
                   console.error("❌ Error fetching form_name:", err.response?.data || err.message);
                 }
@@ -503,7 +498,7 @@ export const addFacebookLead = async (req, res) => {
               // 4️⃣ Combine data
               const combinedData = {
                 leadId: leadData.id,
-                formId: leadData.form_id,
+                formId,
                 formName, // <-- store form_name here
                 createdTime: leadData.created_time,
                 fieldData: leadData.field_data,
@@ -512,7 +507,6 @@ export const addFacebookLead = async (req, res) => {
                 campaignName: formData.campaign_name,
                 platform: formData.platform,
               };
-              console.log("combinedData>>>",combinedData);
               // 5️⃣ Save to DB
               await FacebookLead.create(combinedData);
 
