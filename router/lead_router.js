@@ -12,6 +12,7 @@ import {
   addHotLead,
   getJustLeadController,
   addEFLLead,
+  getSingleFbLead
 } from "../contoller/invoice.controller.js";
 import { verifyPermissionToken } from "../middleware/checkPemissionAuth.js";
 import { verifyJWT } from "../middleware/checkAdminAuth.js";
@@ -52,4 +53,7 @@ leadRouter.post("/webhook/hotlead", addHotLead);
 
 // Router to add EFL leads from EFL website
 leadRouter.post("/webhook/efllead", addEFLLead);
+
+// Router for get single fb lead.
+leadRouter.get("/getSinglelead", verifyJWT(), getSingleFbLead)
 export default leadRouter;

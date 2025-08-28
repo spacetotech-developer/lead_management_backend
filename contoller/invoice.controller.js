@@ -7,10 +7,37 @@ import EFLLead from '../model/leadEFLModel.js';
 import xml2js from 'xml2js'
 
 import axios from "axios";
+import WebEngageModel from "../model/webEngageSyncModel.js";
 
 export const addLeadIndiaMartController = async(req,res,next)=>{
     try {
       const leadData = req.body.RESPONSE;
+      if(leadData){
+        leadData = {
+        ...leadData,
+        Source: "India Mart"
+      };
+        const payload = {
+           "userId": "cfa827ebfeae1ddd35c2c03282c38e9d0d46bdec",
+           "eventName": "STT_Direct_Sales_Lead",
+           "eventTime": new Date().toISOString(),
+           "eventData": leadData
+        }
+        const response = await axios.post(process.env.WEB_ENGAGE_URL,{
+          body:payload
+        })
+        console.log("response>>>>",response);
+        if(response){
+         const WebengagelogIndiaMart = {
+          leadId: leadData?.UNIQUE_QUERY_ID,
+          Date: new Date().toLocaleDateString(),  
+          Time: new Date().toLocaleTimeString(),  
+          Status: response.status,
+          type: "IndiaMart"
+        };
+          await WebEngageModel.create(WebengagelogIndiaMart)
+        }
+      }
       const reponse = await Leads.create(leadData) 
       res.status(200).send("Lead saved successfully");
   } catch (err) {
@@ -658,3 +685,24 @@ export const addEFLLead = async (req, res) =>{
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
+// Get single fb lead
+export const getSingleFbLead = async (req, res) => {
+  try {
+    const { leadId } = req.query; 
+
+    if (!leadId) {
+      return res.status(400).json({ success: false, message: "leadId is required" });
+    }
+
+    const lead = await FacebookLead.findOne({ leadId:leadId });
+
+    if (!lead) {
+      return res.status(404).json({ success: false, message: "No lead found" });
+    }
+
+    return res.status(200).json({ success: true, data: lead, message: "Lead fetched successfully" });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
