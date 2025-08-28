@@ -485,7 +485,7 @@ export const addFacebookLead = async (req, res) => {
                 `https://graph.facebook.com/v21.0/${leadId}?fields=ad_name,adset_name,campaign_name,form_id,platform,created_time&access_token=${process.env.PAGE_ACCESS_TOKEN}`
               );
               const formData = formResponse.data;
-
+              console.log('formData',formData)
               // 3️⃣ Get form details to fetch form_name
               let formName = "";
               if (formData.form_id) {
