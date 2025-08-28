@@ -491,7 +491,7 @@ export const addFacebookLead = async (req, res) => {
               if (formData.form_id) {
                 try {
                   const formDetails = await axios.get(
-                    `https://graph.facebook.com/v23.0/${leadData.form_id}?fields=form_name&access_token=${process.env.PAGE_ACCESS_TOKEN}`
+                    `https://graph.facebook.com/v23.0/${formData.form_id}?fields=form_name&access_token=${process.env.PAGE_ACCESS_TOKEN}`
                   );
                   console.log('formDetails',formDetails);
                   formName = formDetails.data.name;
