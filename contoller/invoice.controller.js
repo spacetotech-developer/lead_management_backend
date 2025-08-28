@@ -483,6 +483,7 @@ export const addFacebookLead = async (req, res) => {
               const formData = formResponse.data;
               // 3️⃣ Get form details to fetch form_name
               let formName = "";
+              let formId = "";
               if (formData.form_id) {
                 try {
                   const formDetails = await axios.get(
