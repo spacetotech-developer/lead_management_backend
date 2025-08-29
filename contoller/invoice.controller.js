@@ -3,41 +3,23 @@ import FacebookLead from '../model/facebookModel.js';
 import JustDialLead from '../model/justDialModel.js';
 import HotLead from '../model/hotLeadModel.js';
 import EFLLead from '../model/leadEFLModel.js';
-// const xml2js = require('xml2js');
 import xml2js from 'xml2js'
+import crypto from 'crypto';
 
 import axios from "axios";
 import WebEngageModel from "../model/webEngageSyncModel.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { generateExcel } from "../utils/getnerateExcel.js";
+import { error } from "console";
 
-export const addLeadIndiaMartController = async(req,res,next)=>{
+export const addLeadIndiaMartController = async(req,res)=>{
     try {
-      const leadData = req.body.RESPONSE;
-      if(leadData){
-        leadData = {
-        ...leadData,
-        Source: "India Mart"
-      };
-        const payload = {
-           "userId": "cfa827ebfeae1ddd35c2c03282c38e9d0d46bdec",
-           "eventName": "STT_Direct_Sales_Lead",
-           "eventTime": new Date().toISOString(),
-           "eventData": leadData
-        }
-        const response = await axios.post(process.env.WEB_ENGAGE_URL,{
-          body:payload
-        })
-        console.log("response>>>>",response);
-        if(response){
-         const WebengagelogIndiaMart = {
-          leadId: leadData?.UNIQUE_QUERY_ID,
-          Date: new Date().toLocaleDateString(),  
-          Time: new Date().toLocaleTimeString(),  
-          Status: response.status,
-          type: "IndiaMart"
-        };
-          await WebEngageModel.create(WebengagelogIndiaMart)
-        }
-      }
+      let leadData = req.body.RESPONSE;
+      const source = "India Mart";
+     if (leadData) {
+      leadData = { ...leadData, Source: source };
+      await WebEngageAPIFunction(leadData, source);
+     }
       const reponse = await Leads.create(leadData) 
       res.status(200).send("Lead saved successfully");
   } catch (err) {
@@ -49,12 +31,18 @@ export const addLeadIndiaMartController = async(req,res,next)=>{
 export const getLeadController = async (req, res, next) => {
     try {
         // Optional: Add pagination parameters
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10, search } = req.query;
         
         // Optional: Add filtering
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
         if (req.query.source) filter.source = req.query.source;
+
+         // ✅ Apply search only if provided
+        if (search && search.trim() !== "") {
+            // For partial match
+            filter.UNIQUE_QUERY_ID = { $regex: search, $options: "i" };
+        }
         
         const leads = await Leads.find(filter)
             .limit(parseInt(limit))
@@ -86,12 +74,18 @@ export const getLeadController = async (req, res, next) => {
 export const getFbLeadController = async (req, res, next) => {
     try {
         // Optional: Add pagination parameters
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10, search } = req.query;
         
         // Optional: Add filtering
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
         if (req.query.source) filter.source = req.query.source;
+
+          // ✅ Apply search only if provided
+        if (search && search.trim() !== "") {
+            // For partial match
+            filter.leadId = { $regex: search, $options: "i" };
+        }
         
         const leads = await FacebookLead.find(filter)
             .limit(parseInt(limit))
@@ -488,7 +482,7 @@ export const verifyWebhook = (req, res) => {
 export const addFacebookLead = async (req, res) => {
   try {
     const body = req.body;
-    // ✅ Respond immediately to Facebook to avoid webhook timeout
+    // Respond immediately to Facebook to avoid webhook timeout
     res.sendStatus(200);
 
     if (body.object === "page") {
@@ -497,18 +491,18 @@ export const addFacebookLead = async (req, res) => {
           if (change.field === "leadgen") {
             const leadId = change.value.leadgen_id;
             try {
-              // 1️⃣ Get lead detailed info (v23)
+              // Get lead detailed info (v23)
               const leadResponse = await axios.get(
                 `https://graph.facebook.com/v23.0/${leadId}?access_token=${process.env.PAGE_ACCESS_TOKEN}`
               );
               const leadData = leadResponse.data;
 
-              // 2️⃣ Get ad/campaign info (v21)
+              // Get ad/campaign info (v21)
               const formResponse = await axios.get(
                 `https://graph.facebook.com/v21.0/${leadId}?fields=ad_name,adset_name,campaign_name,form_id,platform,created_time&access_token=${process.env.PAGE_ACCESS_TOKEN}`
               );
               const formData = formResponse.data;
-              // 3️⃣ Get form details to fetch form_name
+              // Get form details to fetch form_name
               let formName = "";
               let formId = "";
               if (formData.form_id) {
@@ -519,15 +513,15 @@ export const addFacebookLead = async (req, res) => {
                   formName = formDetails?.data?.name;
                   formId = formDetails?.data?.id
                 } catch (err) {
-                  console.error("❌ Error fetching form_name:", err.response?.data || err.message);
+                  console.error("Error fetching form_name:", err.response?.data || err.message);
                 }
               }
 
-              // 4️⃣ Combine data
+              // Combine data
               const combinedData = {
                 leadId: leadData.id,
                 formId,
-                formName, // <-- store form_name here
+                formName, 
                 createdTime: leadData.created_time,
                 fieldData: leadData.field_data,
                 adName: formData.ad_name,
@@ -535,13 +529,15 @@ export const addFacebookLead = async (req, res) => {
                 campaignName: formData.campaign_name,
                 platform: formData.platform,
               };
-              // 5️⃣ Save to DB
+              const source = "India Mart";
+              const response = await WebEngageAPIFunction(combinedData,source)
+              // Save to DB
               await FacebookLead.create(combinedData);
 
-              console.log("✅ Lead saved:", leadData.id);
+              console.log("Lead saved:", leadData.id);
             } catch (err) {
               console.error(
-                "❌ Facebook API error:",
+                "Facebook API error:",
                 err.response?.data || err.message
               );
             }
@@ -550,7 +546,7 @@ export const addFacebookLead = async (req, res) => {
       }
     }
   } catch (err) {
-    console.error("❌ Unexpected error:", err.message);
+    console.error("Unexpected error:", err.message);
     res.sendStatus(500);
   }
 };
@@ -569,6 +565,10 @@ export const addFacebookLead = async (req, res) => {
     else {
       data = req.method === "POST" ? req.body : req.query;
     }
+    
+    const source = "Just Dial"
+    // Web engage API 
+    const response = await WebEngageAPIFunction(data,source);
 
     // Save to DB
     const lead = new JustDialLead(data);
@@ -583,15 +583,20 @@ export const addFacebookLead = async (req, res) => {
 
 // Get Just Dial leads
 export const getJustLeadController = async (req, res ) => {
-   console.log("leads")
     try {
         // Optional: Add pagination parameters
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10, search } = req.query;
         
         // Optional: Add filtering
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
         if (req.query.source) filter.source = req.query.source;
+
+          // ✅ Apply search only if provided
+        if (search && search.trim() !== "") {
+            // For partial match
+            filter.leadid = { $regex: search, $options: "i" };
+        }
         
         const leads = await JustDialLead.find(filter)
             .limit(parseInt(limit))
@@ -706,3 +711,187 @@ export const getSingleFbLead = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Export the Data
+export const exportPendingRequestFormsToExcel = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10000000,
+    order = "desc",
+    search,
+    status
+  } = req.query;
+  let filter = {};
+  if (search) {
+    const reqMatch = search.match(/^REQ[-\s]?(\d+)$/i);
+    if (reqMatch) {
+      const slNoSearch = parseInt(reqMatch[1]);
+      filter.$or = [{ slNo: slNoSearch }];
+    } else {
+      filter.$or = [
+        { leadId: { $regex: search, $options: "i" } },
+        { UNIQUE_QUERY_ID: { $regex: search, $options: "i" } }
+      ];
+    }
+  }
+
+  if (status) filter.status = { $regex: status, $options: "i" };
+
+  const forms = await FacebookLead.find(filter)
+            .limit(parseInt(limit))
+            .skip((page - 1) * limit)
+            .sort({createdAt:order});;
+  const excelBuffer = await generateExcel(forms);
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.setHeader("Content-Disposition", "attachment; filename=forms_data.xlsx");
+  return res.send(excelBuffer);
+});
+
+
+// Web Engage User and Event API 
+const WebEngageAPIFunction = async (leadData, source) => {
+  try {
+    if (!leadData) return;
+
+    // const sha1Id = generateSHA1(leadData.SENDER_MOBILE);
+    const generatedPayload = generatePayload(leadData,source);
+    // const userPayload = {
+    //   userId: sha1Id,
+    //   firstName: leadData?.SENDER_NAME,
+    //   // lastName: '',
+    //   email: leadData?.SENDER_EMAIL,
+    //   hashedPhone: leadData.SENDER_MOBILE,
+    //   whatsappOptIn: "TRUE",
+    //   attributes: { Source: source }
+    // };
+     console.log('userPayload',generatedPayload.userPayload,'process.env.WEB_ENGAGE_URL_USER',process.env.WEB_ENGAGE_URL_USER);
+    const userResponse = await axios.post(
+      process.env.WEB_ENGAGE_URL_USER,
+      generatedPayload?.userPayload,
+      {
+        headers: {
+          'Authorization': `${process.env.WEB_ENGAGE_API_KEY}`, 
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    // console.log('userResponse',userResponse);
+    if (userResponse?.data?.response?.status === 'queued') {
+
+      const eventPayload = {
+        userId: generatedPayload.sha1Id,
+        eventName: "STT_Direct_Sales_Lead",
+        // eventTime: new Date().toISOString(),
+        eventTime: getEventTimeWithTimezone(),
+        eventData: leadData
+      };
+      console.log('eventPayload',eventPayload);
+      const response = await axios.post(
+        process.env.WEB_ENGAGE_URL_EVENT,
+         eventPayload,
+         {
+          headers: {
+            'Authorization': `${process.env.WEB_ENGAGE_API_KEY}`, 
+            'Content-Type': 'application/json'
+          }
+        }
+        );
+      // console.log('response',response);
+      if (response.status === 201) {
+        const WebengagelogIndiaMart = {
+          leadId: leadData?.UNIQUE_QUERY_ID,
+          Date: new Date().toLocaleDateString(),
+          Time: new Date().toLocaleTimeString(),
+          Status: response?.data?.response?.status,
+          type: source
+        };
+        await WebEngageModel.create(WebengagelogIndiaMart);
+      }
+    }
+  } catch (err) {
+    console.error("WebEngageUser error:", err);
+    res.json({
+      error:err.message
+    })
+  }
+};
+
+
+// Function to create SHA1 Id of user
+function generateSHA1(mobileNumber) {
+    // Remove country code if it starts with + and digits
+  let normalizedNumber = mobileNumber.replace(/^\+\d{1,3}-?/, '');
+  // Create SHA-1 hash
+  const hash = crypto.createHash('sha1').update(normalizedNumber).digest('hex');
+  return hash;
+}
+
+const getEventTimeWithTimezone = (date = new Date(), offset = '+0545') => {
+  // Get YYYY-MM-DDTHH:mm:ss
+  const pad = (num) => num.toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offset}`;
+};
+
+// Function for generate payload for user
+const generatePayload = (data,type)=>{
+ if(type ==="India Mart"){
+  const sha1Id = generateSHA1(data.SENDER_MOBILE);
+  const userPayload = {
+       userId: sha1Id,
+      firstName: data?.SENDER_NAME,
+      lastName: '',
+      email: data?.SENDER_EMAIL,
+      hashedPhone: data.SENDER_MOBILE,
+      whatsappOptIn: "TRUE",
+      attributes: { Source: type }
+  }
+  return { userPayload, sha1Id };
+
+ } else if (type === "Just Dial") {
+    const sha1Id = generateSHA1(data.mobile);
+    const userPayload = {
+       userId: sha1Id,
+      firstName: data?.name,
+      lastName: '',
+      email: data?.email,
+      hashedPhone: data.mobile,
+      whatsappOptIn: "TRUE",
+      attributes: { Source: type }
+  }
+  return { userPayload, sha1Id };
+
+ } else {
+    const getValue = (name) => {
+      const field = data.fieldData.find((f) => f.name === name);
+      return field?.values?.[0] || "";
+      };
+    // extract required fields
+    const fullName = getValue("full_name");
+    const [firstName, ...lastNameParts] = fullName.split(" ");
+    const lastName = lastNameParts.join(" ") || "";
+    const phone = getValue("phone_number");
+    const email = getValue("email"); 
+    const sha1Id = generateSHA1(phone);
+
+    const userPayload = {
+       userId: sha1Id,
+      firstName,
+      lastName,
+      email:email,
+      hashedPhone:phone,
+      whatsappOptIn: "TRUE",
+      attributes: { Source: type }
+  }
+  return { userPayload, sha1Id };
+ }
+}

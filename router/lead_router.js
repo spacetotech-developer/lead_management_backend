@@ -12,7 +12,8 @@ import {
   addHotLead,
   getJustLeadController,
   addEFLLead,
-  getSingleFbLead
+  getSingleFbLead,
+  exportPendingRequestFormsToExcel
 } from "../contoller/invoice.controller.js";
 import { verifyPermissionToken } from "../middleware/checkPemissionAuth.js";
 import { verifyJWT } from "../middleware/checkAdminAuth.js";
@@ -23,18 +24,18 @@ const leadRouter = express.Router();
 leadRouter.post("/leadIndiaMart", addLeadIndiaMartController);
 
 // Router to get the india mart lead data.
-leadRouter.get("/getLead", getLeadController);
+leadRouter.get("/getLead", verifyJWT(), getLeadController);
 
-leadRouter.get("/getFbLead", getFbLeadController);
-
-// Router to get card lead state data.
-leadRouter.get("/getLeadStats", getLeadStats);
+leadRouter.get("/getFbLead", verifyJWT(),getFbLeadController);
 
 // Router to get card lead state data.
-leadRouter.get("/getPieChartData/:period", getPieChartData);
+leadRouter.get("/getLeadStats", verifyJWT(), getLeadStats);
 
 // Router to get card lead state data.
-leadRouter.get("/getChartData", getChartData);
+leadRouter.get("/getPieChartData/:period", verifyJWT(), getPieChartData);
+
+// Router to get card lead state data.
+leadRouter.get("/getChartData", verifyJWT(), getChartData);
 
 //Facebook Webhook Verification
 leadRouter.get("/webhook/facebook", verifyWebhook);
@@ -55,5 +56,9 @@ leadRouter.post("/webhook/hotlead", addHotLead);
 leadRouter.post("/webhook/efllead", addEFLLead);
 
 // Router for get single fb lead.
-leadRouter.get("/getSinglelead", verifyJWT(), getSingleFbLead)
+leadRouter.get("/getSinglelead", verifyJWT(), getSingleFbLead);
+
+// Router for export table data
+leadRouter.post("/eport",verifyJWT(),exportPendingRequestFormsToExcel)
+
 export default leadRouter;
