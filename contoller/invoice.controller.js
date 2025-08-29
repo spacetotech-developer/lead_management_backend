@@ -802,7 +802,10 @@ const WebEngageAPIFunction = async (leadData, source) => {
       // console.log('response',response);
       if (response.status === 201) {
         const WebengagelogIndiaMart = {
-          leadId: leadData?.UNIQUE_QUERY_ID,
+          leadId: leadData?.UNIQUE_QUERY_ID ??
+                  leadData?.leadId ??
+                  leadData?.leadid ??
+                  null,
           Date: new Date().toLocaleDateString(),
           Time: new Date().toLocaleTimeString(),
           Status: response?.data?.response?.status,
@@ -813,9 +816,6 @@ const WebEngageAPIFunction = async (leadData, source) => {
     }
   } catch (err) {
     console.error("WebEngageUser error:", err);
-    res.json({
-      error:err.message
-    })
   }
 };
 
