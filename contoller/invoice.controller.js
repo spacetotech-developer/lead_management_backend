@@ -818,7 +818,7 @@ const WebEngageAPIFunction = async (leadData, source) => {
         
       const eventPayload = {
         userId: generatedPayload.sha1Id,
-        eventName: "STT_Direct_Sales_Lead",
+        eventName: "STT_Direct_Sales_Leads",
         // eventTime: new Date().toISOString(),
         eventTime: getEventTimeWithTimezone(),
         eventData: formatEventData(leadData,source)
@@ -834,7 +834,7 @@ const WebEngageAPIFunction = async (leadData, source) => {
           }
         }
         );
-      console.log('response',response);
+      // console.log('response',response);
       if (response.status === 201) {
         const WebengagelogIndiaMart = {
           leadId: leadData?.UNIQUE_QUERY_ID ??
