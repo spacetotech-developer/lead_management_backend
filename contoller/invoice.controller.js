@@ -754,12 +754,13 @@ export const exportPendingRequestFormsToExcel = asyncHandler(async (req, res) =>
 export const getWebEngageLog = async(req,res)=>{
    try {
         // Optional: Add pagination parameters
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10, type } = req.query;
         
         // Optional: Add filtering
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
         if (req.query.source) filter.source = req.query.source;
+        if (req.query.type) filter.type = req.query.type;
 
          // Apply search only if provided
         // if (search && search.trim() !== "") {
@@ -800,17 +801,7 @@ const WebEngageAPIFunction = async (leadData, source) => {
   try {
     if (!leadData) return;
 
-    // const sha1Id = generateSHA1(leadData.SENDER_MOBILE);
     const generatedPayload = generatePayload(leadData,source);
-    // const userPayload = {
-    //   userId: sha1Id,
-    //   firstName: leadData?.SENDER_NAME,
-    //   // lastName: '',
-    //   email: leadData?.SENDER_EMAIL,
-    //   hashedPhone: leadData.SENDER_MOBILE,
-    //   whatsappOptIn: "TRUE",
-    //   attributes: { Source: source }
-    // };
      console.log('userPayload',generatedPayload.userPayload,'process.env.WEB_ENGAGE_URL_USER',process.env.WEB_ENGAGE_URL_USER);
     const userResponse = await axios.post(
       process.env.WEB_ENGAGE_URL_USER,
@@ -824,13 +815,13 @@ const WebEngageAPIFunction = async (leadData, source) => {
     );
     // console.log('userResponse',userResponse);
     if (userResponse?.data?.response?.status === 'queued') {
-
+        
       const eventPayload = {
         userId: generatedPayload.sha1Id,
         eventName: "STT_Direct_Sales_Lead",
         // eventTime: new Date().toISOString(),
         eventTime: getEventTimeWithTimezone(),
-        eventData: leadData
+        eventData: formatEventData(leadData,source)
       };
       console.log('eventPayload',eventPayload);
       const response = await axios.post(
@@ -843,7 +834,7 @@ const WebEngageAPIFunction = async (leadData, source) => {
           }
         }
         );
-      // console.log('response',response);
+      console.log('response',response);
       if (response.status === 201) {
         const WebengagelogIndiaMart = {
           leadId: leadData?.UNIQUE_QUERY_ID ??
@@ -937,4 +928,96 @@ const generatePayload = (data,type)=>{
   }
   return { userPayload, sha1Id };
  }
+}
+
+// Format the event data
+const formatEventData = (data,type)=>{
+  if(type === "India Mart"){
+     return {
+      Date_Time:new Date().toISOString(),
+      Query_Ad_ID:data?.UNIQUE_QUERY_ID,
+      Lead_Type:data?.QUERY_TYPE,
+      Name:data?.SENDER_NAME,
+      Mobile:data?.SENDER_MOBILE,
+      Mobile_Alt:data?.SENDER_MOBILE_ALT,
+      Email:data?.SENDER_EMAIL,
+      Company_Name:data?.SENDER_COMPANY,
+      Address:data?.SENDER_ADDRESS,
+      Pincode:data?.SENDER_PINCODE,
+      City:data?.SENDER_CITY,
+      State:data?.SENDER_STATE,
+      Product:data?.QUERY_PRODUCT_NAME,
+      Customer_Details:data?.QUERY_MESSAGE,
+      MCAT_Name:data?.QUERY_MCAT_NAME,
+      Source:'Indiamart_Lead_Gen',
+      Campaign_Name:data?.QUERY_TYPE,
+      Adset_Name:'',
+      Form_Name:'',
+      Ad_Name:'',
+      Platform:'Indiamart_Lead_Gen',
+  }
+  } else if (type === "Just Dial") {
+      return {
+        Date_Time:data?.date,
+        Query_Ad_ID:'',
+        Lead_Type:data?.leadid,
+        Name:data?.name,
+        Mobile:data?.mobile,
+        Mobile_Alt:data?.phone,
+        Email:data?.email,
+        Company_Name:'',
+        Address:`${data?.area} ${data?.brancharea}`,
+        Pincode:data?.pincode,
+        City:data?.city,
+        State:'',
+        Product:data?.category,
+        Customer_Details:'',
+        MCAT_Name:'',
+        Source:'Justdail',
+        Campaign_Name:'',
+        Adset_Name:'',
+        Form_Name:'',
+        Ad_Name:'',
+        Platform:'Justdail',
+    }
+  } else {
+
+      const getValue = (name) => {
+      const field = data.fieldData.find((f) => f.name === name);
+      return field?.values?.[0] || "";
+      };
+      // extract required fields
+      const fullName = getValue("full_name");
+      const phone = getValue("phone_number");
+      const email = getValue("email"); 
+      const whatsapp_number = getValue("whatsapp_number");
+      const city = getValue("city");
+      const postcode = getValue("post_code")
+      const detail = getValue("how_soon_do_you_want_to_purchase?")
+
+       return {
+        Date_Time:data?.createdTime,
+        Query_Ad_ID:'',
+        Lead_Type:data?.platform,
+        Name:fullName,
+        Mobile:phone,
+        Mobile_Alt:whatsapp_number,
+        Email:email,
+        Company_Name:'',
+        Address:[data?.area, data?.brancharea].filter(Boolean).join(" "),
+        Pincode:postcode,
+        City:city,
+        State:'',
+        Product:data?.formName,
+        Customer_Details:`how_soon_do_you_want_to_purchase ${detail}`,
+        MCAT_Name:'',
+        Source:'Meta_Lead_Generation',
+        Campaign_Name:data?.campaignName,
+        Adset_Name:data?.adsetName,
+        Form_Name:data?.formName,
+        Ad_Name:data?.adName,
+        Platform:data?.platform,
+    }
+  }
+ 
 }

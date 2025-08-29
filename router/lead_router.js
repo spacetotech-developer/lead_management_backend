@@ -63,6 +63,6 @@ leadRouter.get("/getSinglelead", verifyJWT(), getSingleFbLead);
 leadRouter.post("/eport",verifyJWT(),exportPendingRequestFormsToExcel);
 
 // Router for get web engage logs
-leadRouter.get('/webEngagelog',verifyJWT(),getWebEngageLog);
+leadRouter.get('/webEngagelog',getWebEngageLog);
 
 export default leadRouter;
