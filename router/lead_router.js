@@ -13,7 +13,8 @@ import {
   getJustLeadController,
   addEFLLead,
   getSingleFbLead,
-  exportPendingRequestFormsToExcel
+  exportPendingRequestFormsToExcel,
+  getWebEngageLog,
 } from "../contoller/invoice.controller.js";
 import { verifyPermissionToken } from "../middleware/checkPemissionAuth.js";
 import { verifyJWT } from "../middleware/checkAdminAuth.js";
@@ -59,6 +60,9 @@ leadRouter.post("/webhook/efllead", addEFLLead);
 leadRouter.get("/getSinglelead", verifyJWT(), getSingleFbLead);
 
 // Router for export table data
-leadRouter.post("/eport",verifyJWT(),exportPendingRequestFormsToExcel)
+leadRouter.post("/eport",verifyJWT(),exportPendingRequestFormsToExcel);
+
+// Router for get web engage logs
+leadRouter.get('/webEngagelog',verifyJWT(),getWebEngageLog);
 
 export default leadRouter;

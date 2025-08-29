@@ -529,7 +529,7 @@ export const addFacebookLead = async (req, res) => {
                 campaignName: formData.campaign_name,
                 platform: formData.platform,
               };
-              const source = "India Mart";
+              const source = "Facebook";
               const response = await WebEngageAPIFunction(combinedData,source)
               // Save to DB
               await FacebookLead.create(combinedData);
@@ -750,6 +750,50 @@ export const exportPendingRequestFormsToExcel = asyncHandler(async (req, res) =>
   return res.send(excelBuffer);
 });
 
+// Get Webengage Logs 
+export const getWebEngageLog = async(req,res)=>{
+   try {
+        // Optional: Add pagination parameters
+        const { page = 1, limit = 10 } = req.query;
+        
+        // Optional: Add filtering
+        const filter = {};
+        if (req.query.status) filter.status = req.query.status;
+        if (req.query.source) filter.source = req.query.source;
+
+         // Apply search only if provided
+        // if (search && search.trim() !== "") {
+        //     // For partial match
+        //     filter.UNIQUE_QUERY_ID = { $regex: search, $options: "i" };
+        // }
+        
+        const leads = await WebEngageModel.find(filter)
+            .limit(parseInt(limit))
+            .skip((page - 1) * limit)
+            .sort({ createdAt: -1 }); // Sort by newest first
+        
+        // Optional: Get total count for pagination info
+        const total = await WebEngageModel.countDocuments(filter);
+        
+        res.status(200).json({
+            success: true,
+            data: leads,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching leads:", err);
+        res.status(500).json({
+            success: false,
+            message: "Error retrieving leads"
+        });
+    }
+}
+
 
 // Web Engage User and Event API 
 const WebEngageAPIFunction = async (leadData, source) => {
@@ -818,7 +862,6 @@ const WebEngageAPIFunction = async (leadData, source) => {
     console.error("WebEngageUser error:", err);
   }
 };
-
 
 // Function to create SHA1 Id of user
 function generateSHA1(mobileNumber) {
